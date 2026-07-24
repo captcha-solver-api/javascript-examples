@@ -1,4 +1,4 @@
-# Contributing to captcha-solver-python
+# Contributing to captcha-solver-javascript
 
 Thank you for considering contributing to the captcha-solver-python! By contributing, you're helping improve the project and enabling others to benefit from your improvements.
 
