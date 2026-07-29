@@ -1,11 +1,10 @@
 /**
- * Example: Solve a Cloudflare Turnstile challenge.
+ * Example: Solve a Tencent captcha challenge.
  *
  * Prerequisites:
  *     Set the CAPTCHA_API_KEY environment variable in a .env file.
- *     Replace websiteURL and websiteKey with values from your target page.
- *     Pass action, data, and pageData if the target site uses them.
- *     Always pass userAgent for complex pages like Cloudflare Challenge.
+ *     Replace websiteURL and appId with values from your target page.
+ *     Pass captchaScript if the site uses a non-default script URL.
  */
 
 const axios = require('axios');
@@ -15,24 +14,20 @@ require('dotenv').config();
 const apiKey = process.env.CAPTCHA_API_KEY || "YOUR_API_KEY";
 
 // --- Proxyless example ---
-// Solves Cloudflare Turnstile without a proxy.
-// The token is tied to the User-Agent, so pass the same one your browser or bot uses.
-async function solveTurnstileProxyless() {
+// Solves Tencent captcha without a proxy.
+// The service proxies are used to solve the captcha.
+async function solveTencentProxyless() {
     try {
-        // Step 1: Create a task to solve the Turnstile captcha.
-        // Pass action, data (cData), or pageData if the site uses them.
-        // For Cloudflare Challenge pages, you need to intercept turnstile.render to get these values.
+        // Step 1: Create a task to solve the Tencent captcha.
+        // appId is found in the page source code. captchaScript is optional if the site uses the default.
         const response = await axios.post("https://api.captcha-solver.com/createTask", {
             clientKey: apiKey,
             task: {
-                type: "TurnstileTaskProxyless",
-                websiteURL: "https://example.com/login",                   // Full URL of the page with Turnstile
-                websiteKey: "0x4AAAAAAAVrOwQWPlm3Bnr5",                    // data-sitekey attribute value
-                // Optional fields (pass only if the target site uses them):
-                // action: "login",                                         // Value of data-action attribute
-                // data: "custom-cdata-value",                              // Value of data-cdata attribute
-                // pageData: "chl-page-data-value",                         // Value of chlPageData parameter
-                userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." // User-Agent your browser or bot uses
+                type: "TencentTaskProxyless",
+                websiteURL: "https://example.com/login",                   // Full URL of the page with captcha
+                appId: "190014885",                                        // appId from page source code (required)
+                // Optional fields:
+                // captchaScript: "https://turing.captcha.qcloud.com/TCaptcha.js"  // Custom script URL if non-default
             }
         });
         const taskId = response.data.taskId;
@@ -45,8 +40,8 @@ async function solveTurnstileProxyless() {
                 taskId: taskId
             });
             if (result.data.status === "ready") {
-                // Solution contains {"token": "0.zxcv..."}
-                // Pass this token to the cf-turnstile-response field or widget callback.
+                // Solution contains {"appid": "...", "ret": 0, "ticket": "...", "randstr": "..."}
+                // Pass all four values together into the page's captcha callback as-is.
                 console.log("result: " + JSON.stringify(result.data.solution));
                 break;
             }
@@ -58,32 +53,27 @@ async function solveTurnstileProxyless() {
     }
 }
 
-solveTurnstileProxyless();
+solveTencentProxyless();
 
 // --- With proxy example ---
-// Solves Cloudflare Turnstile through your own proxy.
+// Solves Tencent captcha through your own proxy.
 // Use when the target site is geo-restricted or you need a consistent session.
-async function solveTurnstileWithProxy() {
+async function solveTencentWithProxy() {
     try {
         // Step 1: Create a task with proxy parameters.
         // Your proxy IP will be used to access the target site and solve the captcha.
         const response = await axios.post("https://api.captcha-solver.com/createTask", {
             clientKey: apiKey,
             task: {
-                type: "TurnstileTask",
-                websiteURL: "https://example.com/login",                   // Full URL of the page with Turnstile
-                websiteKey: "0x4AAAAAAAVrOwQWPlm3Bnr5",                    // data-sitekey attribute value
+                type: "TencentTask",
+                websiteURL: "https://example.com/login",                   // Full URL of the page with captcha
+                appId: "190014885",                                        // appId from page source code (required)
                 // Proxy parameters:
                 proxyType: "http",       // http, socks4, or socks5
                 proxyAddress: "1.2.3.4", // Proxy IP address
                 proxyPort: 8080,         // Proxy port
                 proxyLogin: "user",      // Login for proxy authorization (optional)
-                proxyPassword: "password", // Password for proxy authorization (optional)
-                // Optional fields:
-                // action: "login",                                         // Value of data-action attribute
-                // data: "custom-cdata-value",                              // Value of data-cdata attribute
-                // pageData: "chl-page-data-value",                         // Value of chlPageData parameter
-                userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." // User-Agent your browser or bot uses
+                proxyPassword: "password" // Password for proxy authorization (optional)
             }
         });
         const taskId = response.data.taskId;
@@ -95,7 +85,7 @@ async function solveTurnstileWithProxy() {
                 taskId: taskId
             });
             if (result.data.status === "ready") {
-                // Solution contains the same token.
+                // Solution contains the same appid, ret, ticket, and randstr values.
                 console.log("result: " + JSON.stringify(result.data.solution));
                 break;
             }
@@ -107,4 +97,4 @@ async function solveTurnstileWithProxy() {
     }
 }
 
-solveTurnstileWithProxy();
+solveTencentWithProxy();
