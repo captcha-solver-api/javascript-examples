@@ -37,8 +37,8 @@ This project demonstrates how to send HTTP requests to the API for solving CAPTC
 Clone the repository:
 
 ```bash
-git clone https://github.com/captcha-solver-api/js-examples.git
-cd js-examples
+git clone https://github.com/captcha-solver-api/javascript-examples.git
+cd javascript-examples
 ```
 
 Install dependencies:
