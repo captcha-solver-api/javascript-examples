@@ -10,6 +10,7 @@ This project demonstrates how to send HTTP requests to the API for solving CAPTC
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
 - [Supported CAPTCHA Types](#supported-types)
 - [Usage Examples](#usage-examples)
   - [reCAPTCHA v2](#recaptcha-v2)
@@ -62,90 +63,92 @@ node examples/recaptcha_v2.js
 
 ## Quick Start
 
-This single example solves a reCAPTCHA v2. It creates a task, polls for the result, and prints the solution token.
+This single example solves a reCAPTCHA v2. `solveCaptcha` creates the task, polls until it is ready, and returns the solution.
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const { solveCaptcha } = require('./utils/client');
 
-const API_KEY = process.env.CAPTCHA_API_KEY;
-
-async function solveRecaptchaV2() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: API_KEY,
-        task: {
-            type: "RecaptchaV2TaskProxyless",
-            websiteURL: "https://example.com/login",
-            websiteKey: "SITE_KEY"
-        }
+async function main() {
+    const solution = await solveCaptcha({
+        type: "RecaptchaV2TaskProxyless",
+        websiteURL: "https://example.com/login",
+        websiteKey: "SITE_KEY"
     });
 
-    const taskId = response.data.taskId;
-
-    while (true) {
-        const result = await axios.post("https://api.captcha-solver.com/getTaskResult", {
-            clientKey: API_KEY,
-            taskId: taskId
-        });
-
-        if (result.data.status === "ready") {
-            console.log(result.data.solution.gRecaptchaResponse);
-            break;
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 3000));
+    if (!solution) {
+        process.exit(1);
     }
+
+    console.log(solution.gRecaptchaResponse);
 }
 
-solveRecaptchaV2();
+main();
 ```
+
+---
+
+## Project Structure
+
+All request, error checking and polling logic lives in [`utils/client.js`](utils/client.js), so the examples only describe the task itself.
+
+```text
+examples/   One runnable example per captcha type
+utils/
+  client.js   API helpers: createTask, getTaskResult, waitForResult, solveCaptcha, getBalance
+  config.js   API base URL, API key, polling defaults
+```
+
+`utils/client.js` exports:
+
+| Function | Description |
+|---|---|
+| `solveCaptcha(task, options?)` | Creates a task and waits for the solution. Returns the solution object, or `null` on error/timeout. |
+| `createTask(task)` | Creates a task. Returns the task ID, or `null` on error. |
+| `getTaskResult(taskId)` | Single status check. Returns the full response body, or `null` on error. |
+| `waitForResult(taskId, options?)` | Polls `getTaskResult` until the task is ready. Returns the solution object, or `null` on error/timeout. |
+| `getBalance()` | Returns the current account balance, or `null` on error. |
+
+Every helper checks `errorId` and logs a description, so examples never need their own error branches.
 
 ---
 
 ## Supported Types
 
-| Type | Proxyless | With Proxy |
-|---|---|---|
-| reCAPTCHA v2 | ✅ | ✅ |
-| reCAPTCHA v2 Enterprise | ✅ | ✅ |
-| reCAPTCHA v3 | ✅ | ❌ |
-| Cloudflare Turnstile | ✅ | ✅ |
-| Yandex SmartCaptcha (token) | ✅ | ✅ |
-| Yandex SmartCaptcha (image) | ✅ | ❌ |
-| Image to Text | ✅ | ❌ |
-| Coordinates | ✅ | ❌ |
-| GeeTest v3 | ✅ | ✅ |
-| GeeTest v4 | ✅ | ✅ |
-| Tencent | ✅ | ✅ |
+| Type | Proxyless | With Proxy | Example |
+|---|---|---|---|
+| reCAPTCHA v2 | ✅ | ✅ | [recaptcha_v2.js](examples/recaptcha_v2.js) |
+| reCAPTCHA v2 Enterprise | ✅ | ✅ | [recaptcha_v2_enterprise.js](examples/recaptcha_v2_enterprise.js) |
+| reCAPTCHA v3 | ✅ | ❌ | [recaptcha_v3.js](examples/recaptcha_v3.js) |
+| Cloudflare Turnstile | ✅ | ✅ | [turnstile.js](examples/turnstile.js) |
+| Yandex SmartCaptcha (token) | ✅ | ✅ | [yandex_smartcaptcha.js](examples/yandex_smartcaptcha.js) |
+| Yandex SmartCaptcha (image) | ✅ | ❌ | [yandex_smartcaptcha_image.js](examples/yandex_smartcaptcha_image.js) |
+| Image to Text | ✅ | ❌ | [image_to_text.js](examples/image_to_text.js) |
+| Coordinates | ✅ | ❌ | [coordinates.js](examples/coordinates.js) |
+| GeeTest v3 | ✅ | ✅ | [geetest_v3.js](examples/geetest_v3.js) |
+| GeeTest v4 | ✅ | ✅ | [geetest_v4.js](examples/geetest_v4.js) |
+| Tencent | ✅ | ✅ | [tencent.js](examples/tencent.js) |
 
 ---
 
 ## Usage Examples
+
+The snippets below focus on the task object for each type. They are fragments meant to run inside an `async` function, as in the [Quick Start](#quick-start). Each linked example file is a complete runnable script and also contains a variant that uses your own proxy.
 
 ### reCAPTCHA v2
 
 Uses `RecaptchaV2TaskProxyless`. Add `isInvisible`, `userAgent`, or `cookies` if your target page requires them. Use `RecaptchaV2Task` for your own proxy. See the official docs for reCAPTCHA v2 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#recaptcha-v2).
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const { solveCaptcha } = require('./utils/client');
 
-async function solveRecaptchaV2() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "RecaptchaV2TaskProxyless",
-            websiteURL: "https://example.com",
-            websiteKey: "SITE_KEY",
-            isInvisible: false
-        }
-    });
+const solution = await solveCaptcha({
+    type: "RecaptchaV2TaskProxyless",
+    websiteURL: "https://example.com",
+    websiteKey: "SITE_KEY",
+    isInvisible: false
+});
 
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveRecaptchaV2();
+// solution: { gRecaptchaResponse: "03AGdBq..." }
 ```
 
 ### reCAPTCHA v2 Enterprise
@@ -153,25 +156,14 @@ solveRecaptchaV2();
 Uses `RecaptchaV2EnterpriseTaskProxyless`. Pass `enterprisePayload` if the site uses `grecaptcha.enterprise.render` with extra parameters. Use `RecaptchaV2EnterpriseTask` for your own proxy. See the official docs for reCAPTCHA v2 Enterprise parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#recaptcha-v2-enterprise).
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const solution = await solveCaptcha({
+    type: "RecaptchaV2EnterpriseTaskProxyless",
+    websiteURL: "https://example.com",
+    websiteKey: "SITE_KEY",
+    enterprisePayload: { s: "SITE_SPECIFIC_DATA" }
+});
 
-async function solveRecaptchaV2Enterprise() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "RecaptchaV2EnterpriseTaskProxyless",
-            websiteURL: "https://example.com",
-            websiteKey: "SITE_KEY",
-            enterprisePayload: { s: "SITE_SPECIFIC_DATA" }
-        }
-    });
-
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveRecaptchaV2Enterprise();
+// solution: { gRecaptchaResponse: "03AGdBq..." }
 ```
 
 ### reCAPTCHA v3
@@ -179,26 +171,17 @@ solveRecaptchaV2Enterprise();
 Uses `RecaptchaV3TaskProxyless`. Set `minScore` to the required threshold. Pass `pageAction` if known. Set `isEnterprise` to `true` for reCAPTCHA v3 Enterprise. See the official docs for reCAPTCHA v3 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#recaptcha-v3).
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const solution = await solveCaptcha({
+    type: "RecaptchaV3TaskProxyless",
+    websiteURL: "https://example.com",
+    websiteKey: "SITE_KEY",
+    minScore: 0.3,
+    pageAction: "login"
+}, {
+    pollingInterval: 10000 // v3 tasks take longer, poll less often
+});
 
-async function solveRecaptchaV3() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "RecaptchaV3TaskProxyless",
-            websiteURL: "https://example.com",
-            websiteKey: "SITE_KEY",
-            minScore: 0.3,
-            pageAction: "login"
-        }
-    });
-
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveRecaptchaV3();
+// solution: { gRecaptchaResponse: "03AGdBq..." }
 ```
 
 ### Cloudflare Turnstile
@@ -206,24 +189,14 @@ solveRecaptchaV3();
 Uses `TurnstileTaskProxyless`. Pass `action`, `data` (cData), or `pageData` if the site uses them. Always pass `userAgent` for complex pages like Cloudflare Challenge. Use `TurnstileTask` for your own proxy. See the official docs for Cloudflare Turnstile parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#cloudflare-turnstile).
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const solution = await solveCaptcha({
+    type: "TurnstileTaskProxyless",
+    websiteURL: "https://example.com",
+    websiteKey: "SITE_KEY",
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..."
+});
 
-async function solveTurnstile() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "TurnstileTaskProxyless",
-            websiteURL: "https://example.com",
-            websiteKey: "SITE_KEY"
-        }
-    });
-
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveTurnstile();
+// solution: { token: "0.zxcv..." }
 ```
 
 ### Yandex SmartCaptcha
@@ -231,24 +204,13 @@ solveTurnstile();
 Token-based solving uses `YandexSmartCaptchaTaskProxyless` or `YandexSmartCaptchaTask`. Image-based solving uses `CoordinatesTask` with `imgType` set to `smart_captcha` or `pazl_smart_captcha`. See the Coordinates section for image examples. See the official docs for Yandex SmartCaptcha parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#yandex-smartcaptcha).
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const solution = await solveCaptcha({
+    type: "YandexSmartCaptchaTaskProxyless",
+    websiteURL: "https://example.com",
+    websiteKey: "Y5Lh0ti..."
+});
 
-async function solveYandexSmartCaptcha() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "YandexSmartCaptchaTaskProxyless",
-            websiteURL: "https://example.com",
-            websiteKey: "Y5Lh0ti..."
-        }
-    });
-
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveYandexSmartCaptcha();
+// solution: { token: "dV9xNjYyNTU3Njkx..." }
 ```
 
 ### Image to Text
@@ -256,29 +218,21 @@ solveYandexSmartCaptcha();
 Uses `ImageToTextTask`. Set `numeric`, `minLength`, `maxLength`, or `case` to improve accuracy. Add `comment` for worker instructions. See the official docs for Image to Text parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#image-to-text).
 
 ```javascript
-const axios = require('axios');
 const fs = require('fs');
-require('dotenv').config();
+const { solveCaptcha } = require('./utils/client');
 
-async function solveImageToText() {
-    const imageBase64 = fs.readFileSync("captcha.png", { encoding: "base64" });
+// The body must be a pure base64 string, without the data:image/...;base64, prefix.
+const body = fs.readFileSync("captcha.png", { encoding: "base64" });
 
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "ImageToTextTask",
-            body: imageBase64,
-            numeric: 1,
-            minLength: 4,
-            maxLength: 6
-        }
-    });
+const solution = await solveCaptcha({
+    type: "ImageToTextTask",
+    body: body,
+    numeric: 1,
+    minLength: 4,
+    maxLength: 6
+});
 
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveImageToText();
+// solution: { text: "aB3fX9" }
 ```
 
 ### Coordinates
@@ -286,27 +240,18 @@ solveImageToText();
 Uses `CoordinatesTask`. Works for click-based captchas and Yandex SmartCaptcha image challenges. Set `imgType` to `smart_captcha` or `pazl_smart_captcha` for Yandex. Always pass `imgInstructions` for `smart_captcha`. See the official docs for Coordinates parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#coordinates).
 
 ```javascript
-const axios = require('axios');
 const fs = require('fs');
-require('dotenv').config();
+const { solveCaptcha } = require('./utils/client');
 
-async function solveCoordinates() {
-    const imageBase64 = fs.readFileSync("captcha.png", { encoding: "base64" });
+const body = fs.readFileSync("captcha.png", { encoding: "base64" });
 
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "CoordinatesTask",
-            body: imageBase64,
-            comment: "click on the green apple"
-        }
-    });
+const solution = await solveCaptcha({
+    type: "CoordinatesTask",
+    body: body,
+    comment: "click on the green apple"
+});
 
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveCoordinates();
+// solution: { coordinates: [{ x: 358, y: 268 }] }
 ```
 
 ### GeeTest v3
@@ -314,25 +259,16 @@ solveCoordinates();
 Uses `GeeTestTaskProxyless` or `GeeTestTask`. Requires fresh `gt` and `challenge` values from the target page on each request. Version defaults to 3. See the official docs for GeeTest v3 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#geetest-v3).
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const solution = await solveCaptcha({
+    type: "GeeTestTaskProxyless",
+    websiteURL: "https://example.com",
+    gt: "f2ae6cadcf7886856696c46d84d109d1",
+    challenge: challenge // Must be fetched fresh from the target page
+}, {
+    pollingInterval: 10000 // GeeTest tasks take longer, poll less often
+});
 
-async function solveGeeTestV3() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "GeeTestTaskProxyless",
-            websiteURL: "https://example.com",
-            gt: "f2ae6cadcf7886856696c46d84d109d1",
-            challenge: "12345678abc90123d45678e90123f45g6"
-        }
-    });
-
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveGeeTestV3();
+// solution: { challenge: "...", validate: "...", seccode: "..." }
 ```
 
 ### GeeTest v4
@@ -340,25 +276,16 @@ solveGeeTestV3();
 Uses `GeeTestTaskProxyless` or `GeeTestTask`. Set `version` to 4. Pass `initParameters` with `captcha_id` from the target page. See the official docs for GeeTest v4 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#geetest-v4).
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const solution = await solveCaptcha({
+    type: "GeeTestTaskProxyless",
+    websiteURL: "https://example.com",
+    version: 4,
+    initParameters: { captcha_id: "e392e65f912c780f2c3ebac7702651de" }
+}, {
+    pollingInterval: 10000
+});
 
-async function solveGeeTestV4() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "GeeTestTaskProxyless",
-            websiteURL: "https://example.com",
-            version: 4,
-            initParameters: { captcha_id: "e392e65f912c780f2c3ebac7702651de" }
-        }
-    });
-
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveGeeTestV4();
+// solution: { captcha_id: "...", lot_number: "...", pass_token: "...", gen_time: "...", captcha_output: "..." }
 ```
 
 ### Tencent
@@ -366,99 +293,67 @@ solveGeeTestV4();
 Uses `TencentTaskProxyless` or `TencentTask`. Requires `appId` from the page source. Pass `captchaScript` if the site uses a non-default script URL. See the official docs for Tencent parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#tencent).
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const solution = await solveCaptcha({
+    type: "TencentTaskProxyless",
+    websiteURL: "https://example.com",
+    appId: "190014885"
+});
 
-async function solveTencent() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "TencentTaskProxyless",
-            websiteURL: "https://example.com",
-            appId: "190014885"
-        }
-    });
-
-    const taskId = response.data.taskId;
-    console.log("Task ID:", taskId);
-}
-
-solveTencent();
+// solution: { appid: "...", ret: 0, ticket: "...", randstr: "..." }
 ```
 
 ### Check Balance
 
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const { getBalance } = require('./utils/client');
 
-async function checkBalance() {
-    const response = await axios.post("https://api.captcha-solver.com/getBalance", {
-        clientKey: process.env.CAPTCHA_API_KEY
-    });
-
-    console.log(response.data.balance);
-}
-
-checkBalance();
+const balance = await getBalance();
+console.log(balance);
 ```
 
 ### Custom Timeout and Polling
 
+The defaults live in [`utils/config.js`](utils/config.js): a poll every `POLLING_INTERVAL` milliseconds, up to `MAX_RETRIES` times. Change them there to affect every example, or override them per call:
+
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const solution = await solveCaptcha(task, {
+    pollingInterval: 3000, // Check every 3 seconds
+    maxRetries: 40         // Give up after 40 checks (2 minutes)
+});
 
-async function solveWithTimeout(taskId) {
-    const timeout = 120;
-    const startTime = Date.now();
+// solution is null if the task was not solved in time
+```
 
-    while (true) {
-        if ((Date.now() - startTime) / 1000 > timeout) {
-            console.log("Timeout reached");
-            break;
-        }
+The same options work with `waitForResult` if you create the task yourself:
 
-        const result = await axios.post("https://api.captcha-solver.com/getTaskResult", {
-            clientKey: process.env.CAPTCHA_API_KEY,
-            taskId: taskId
-        });
+```javascript
+const { createTask, waitForResult } = require('./utils/client');
 
-        if (result.data.status === "ready") {
-            console.log(result.data.solution);
-            break;
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 3000));
-    }
-}
-
-solveWithTimeout("YOUR_TASK_ID");
+const taskId = await createTask(task);
+const solution = await waitForResult(taskId, { pollingInterval: 3000 });
 ```
 
 ### Error Handling
 
+The helpers check `errorId` on every response, log the description, and return `null`. A single check is enough:
+
 ```javascript
-const axios = require('axios');
-require('dotenv').config();
+const { solveCaptcha } = require('./utils/client');
 
-async function handleErrors() {
-    const response = await axios.post("https://api.captcha-solver.com/createTask", {
-        clientKey: process.env.CAPTCHA_API_KEY,
-        task: {
-            type: "RecaptchaV2TaskProxyless",
-            websiteURL: "https://example.com",
-            websiteKey: "INVALID_KEY"
-        }
-    });
+const solution = await solveCaptcha({
+    type: "RecaptchaV2TaskProxyless",
+    websiteURL: "https://example.com",
+    websiteKey: "INVALID_KEY"
+});
 
-    if (response.data.errorId !== 0) {
-        console.log(`Error: ${response.data.errorDescription}`);
-    }
+if (!solution) {
+    // Already logged, for example:
+    // [-] API Error during task creation: { errorId: 1, errorDescription: 'ERROR_RECAPTCHA_INVALID_SITEKEY' }
+    process.exit(1);
 }
-
-handleErrors();
 ```
+
+`null` means one of: an API error (bad key, invalid sitekey, insufficient funds), a connection error, or the polling limit was reached. See the [error list](https://captcha-solver.com/en/docs) for the possible `errorDescription` values.
 
 ---
 

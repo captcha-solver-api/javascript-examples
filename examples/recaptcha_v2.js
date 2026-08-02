@@ -1,111 +1,73 @@
 /**
- * Example: Solve a reCAPTCHA v2 Enterprise challenge.
+ * Example: Solve a reCAPTCHA v2 challenge.
  *
  * Prerequisites:
  *     Set the CAPTCHA_API_KEY environment variable in a .env file.
  *     Replace websiteURL and websiteKey with values from your target page.
- *     If the site uses enterprisePayload, extract and pass it or the token may be rejected.
+ *     websiteKey is the data-sitekey attribute of the .g-recaptcha element.
+ *
+ * For reCAPTCHA v2 Enterprise see examples/recaptcha_v2_enterprise.js.
  */
 
-const axios = require('axios');
-require('dotenv').config();
+const { solveCaptcha } = require('../utils/client');
+const { validateConfig } = require('../utils/config');
 
-// Load API key from environment variable or set it directly here.
-const apiKey = process.env.CAPTCHA_API_KEY || "YOUR_API_KEY";
+// Fail early with a clear message if the API key is missing.
+validateConfig();
 
 // --- Proxyless example ---
-// Solves reCAPTCHA v2 Enterprise without a proxy.
-// Enterprise captchas are loaded via the reCAPTCHA Enterprise API.
-// If the site passes extra parameters to grecaptcha.enterprise.render(),
-// you must pass them as enterprisePayload or the token will be rejected.
-async function solveRecaptchaV2EnterpriseProxyless() {
-    try {
-        // Step 1: Create a task to solve the reCAPTCHA v2 Enterprise captcha.
-        // The API returns a taskId that you use to poll for the result.
-        const response = await axios.post("https://api.captcha-solver.com/createTask", {
-            clientKey: apiKey,
-            task: {
-                type: "RecaptchaV2EnterpriseTaskProxyless",
-                websiteURL: "https://example.com/login",                   // Full URL of the page with captcha
-                websiteKey: "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            // data-sitekey attribute value
-                isInvisible: false,                                        // Set True for invisible reCAPTCHA
-                // Optional fields (pass only if the target site requires them):
-                // enterprisePayload: {"s": "value-from-page"},             // Extra params from grecaptcha.enterprise.render()
-                // apiDomain: "recaptcha.net",                               // Set if site loads captcha from recaptcha.net
-                // userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  // Browser User-Agent
-                // cookies: "session=abc123; token=xyz789"                   // Session cookies if needed
-            }
-        });
-        const taskId = response.data.taskId;
+// Solves reCAPTCHA v2 without a proxy. Tasks are solved from the service IP addresses.
+// This is the right choice unless the target site is geo-restricted or checks the IP
+// that requested the token against the IP that submits the form.
+async function solveRecaptchaV2Proxyless() {
+    const solution = await solveCaptcha({
+        type: "RecaptchaV2TaskProxyless",
+        websiteURL: "https://example.com/login",                   // Full URL of the page with captcha
+        websiteKey: "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            // data-sitekey attribute value
+        isInvisible: false,                                        // Set true for invisible reCAPTCHA
+        // Optional fields (pass only if the target site requires them):
+        // apiDomain: "recaptcha.net",                              // Set if site loads captcha from recaptcha.net
+        // userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  // Browser User-Agent
+        // cookies: "session=abc123; token=xyz789"                  // Session cookies if needed
+    });
 
-        // Step 2: Poll for the result until the task is ready.
-        // The API processes the captcha asynchronously. Check the status periodically.
-        while (true) {
-            const result = await axios.post("https://api.captcha-solver.com/getTaskResult", {
-                clientKey: apiKey,
-                taskId: taskId
-            });
-            if (result.data.status === "ready") {
-                // Solution contains {"gRecaptchaResponse": "03AGdBq..."}
-                // Pass this token to the g-recaptcha-response field or widget callback.
-                console.log("result: " + JSON.stringify(result.data.solution));
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds before polling again.
-        }
-    } catch (error) {
-        console.error(error.message);
+    if (!solution) {
         process.exit(1);
     }
+
+    // Solution contains {"gRecaptchaResponse": "03AGdBq..."}
+    // Pass this token to the g-recaptcha-response field or widget callback.
+    console.log("result: " + JSON.stringify(solution));
 }
 
-solveRecaptchaV2EnterpriseProxyless();
+solveRecaptchaV2Proxyless();
 
 // --- With proxy example ---
-// Solves reCAPTCHA v2 Enterprise through your own proxy.
+// Solves reCAPTCHA v2 through your own proxy.
 // Use when the target site is geo-restricted or you need a consistent session.
-async function solveRecaptchaV2EnterpriseWithProxy() {
-    try {
-        // Step 1: Create a task with proxy parameters.
-        // Your proxy IP will be used to access the target site and solve the captcha.
-        const response = await axios.post("https://api.captcha-solver.com/createTask", {
-            clientKey: apiKey,
-            task: {
-                type: "RecaptchaV2EnterpriseTask",
-                websiteURL: "https://example.com/login",                   // Full URL of the page with captcha
-                websiteKey: "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            // data-sitekey attribute value
-                // Proxy parameters:
-                proxyType: "http",       // http, socks4, or socks5
-                proxyAddress: "1.2.3.4", // Proxy IP address
-                proxyPort: 8080,         // Proxy port
-                proxyLogin: "user",      // Login for proxy authorization (optional)
-                proxyPassword: "password", // Password for proxy authorization (optional)
-                // Optional fields:
-                isInvisible: false,
-                // enterprisePayload: {"s": "value-from-page"},             // Extra params from grecaptcha.enterprise.render()
-                userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...", // Browser User-Agent
-                cookies: "foo=bar; baz=1"                                  // Session cookies if needed
-            }
-        });
-        const taskId = response.data.taskId;
+async function solveRecaptchaV2WithProxy() {
+    const solution = await solveCaptcha({
+        type: "RecaptchaV2Task",
+        websiteURL: "https://example.com/login",                   // Full URL of the page with captcha
+        websiteKey: "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            // data-sitekey attribute value
+        // Proxy parameters:
+        proxyType: "http",         // http, socks4, or socks5
+        proxyAddress: "1.2.3.4",   // Proxy IP address
+        proxyPort: 8080,           // Proxy port
+        proxyLogin: "user",        // Login for proxy authorization (optional)
+        proxyPassword: "password", // Password for proxy authorization (optional)
+        // Optional fields:
+        isInvisible: false,
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...", // Browser User-Agent
+        cookies: "foo=bar; baz=1"                                  // Session cookies if needed
+    });
 
-        // Step 2: Poll for the result until the task is ready.
-        while (true) {
-            const result = await axios.post("https://api.captcha-solver.com/getTaskResult", {
-                clientKey: apiKey,
-                taskId: taskId
-            });
-            if (result.data.status === "ready") {
-                // Solution contains the same gRecaptchaResponse token.
-                console.log("result: " + JSON.stringify(result.data.solution));
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds before polling again.
-        }
-    } catch (error) {
-        console.error(error.message);
+    if (!solution) {
         process.exit(1);
     }
+
+    // Solution contains the same gRecaptchaResponse token.
+    console.log("result: " + JSON.stringify(solution));
 }
 
-solveRecaptchaV2EnterpriseWithProxy();
+solveRecaptchaV2WithProxy();
