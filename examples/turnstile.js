@@ -8,54 +8,36 @@
  *     Always pass userAgent for complex pages like Cloudflare Challenge.
  */
 
-const axios = require('axios');
-require('dotenv').config();
+const { solveCaptcha } = require('../utils/client');
+const { validateConfig } = require('../utils/config');
 
-// Load API key from environment variable or set it directly here.
-const apiKey = process.env.CAPTCHA_API_KEY || "YOUR_API_KEY";
+// Fail early with a clear message if the API key is missing.
+validateConfig();
 
 // --- Proxyless example ---
 // Solves Cloudflare Turnstile without a proxy.
 // The token is tied to the User-Agent, so pass the same one your browser or bot uses.
 async function solveTurnstileProxyless() {
-    try {
-        // Step 1: Create a task to solve the Turnstile captcha.
-        // Pass action, data (cData), or pageData if the site uses them.
-        // For Cloudflare Challenge pages, you need to intercept turnstile.render to get these values.
-        const response = await axios.post("https://api.captcha-solver.com/createTask", {
-            clientKey: apiKey,
-            task: {
-                type: "TurnstileTaskProxyless",
-                websiteURL: "https://example.com/login",                   // Full URL of the page with Turnstile
-                websiteKey: "0x4AAAAAAAVrOwQWPlm3Bnr5",                    // data-sitekey attribute value
-                // Optional fields (pass only if the target site uses them):
-                // action: "login",                                         // Value of data-action attribute
-                // data: "custom-cdata-value",                              // Value of data-cdata attribute
-                // pageData: "chl-page-data-value",                         // Value of chlPageData parameter
-                userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." // User-Agent your browser or bot uses
-            }
-        });
-        const taskId = response.data.taskId;
+    // Pass action, data (cData), or pageData if the site uses them.
+    // For Cloudflare Challenge pages, you need to intercept turnstile.render to get these values.
+    const solution = await solveCaptcha({
+        type: "TurnstileTaskProxyless",
+        websiteURL: "https://example.com/login",                   // Full URL of the page with Turnstile
+        websiteKey: "0x4AAAAAAAVrOwQWPlm3Bnr5",                    // data-sitekey attribute value
+        // Optional fields (pass only if the target site uses them):
+        // action: "login",                                         // Value of data-action attribute
+        // data: "custom-cdata-value",                              // Value of data-cdata attribute
+        // pageData: "chl-page-data-value",                         // Value of chlPageData parameter
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." // User-Agent your browser or bot uses
+    });
 
-        // Step 2: Poll for the result until the task is ready.
-        // The API processes the captcha asynchronously. Check the status periodically.
-        while (true) {
-            const result = await axios.post("https://api.captcha-solver.com/getTaskResult", {
-                clientKey: apiKey,
-                taskId: taskId
-            });
-            if (result.data.status === "ready") {
-                // Solution contains {"token": "0.zxcv..."}
-                // Pass this token to the cf-turnstile-response field or widget callback.
-                console.log("result: " + JSON.stringify(result.data.solution));
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds before polling again.
-        }
-    } catch (error) {
-        console.error(error.message);
+    if (!solution) {
         process.exit(1);
     }
+
+    // Solution contains {"token": "0.zxcv..."}
+    // Pass this token to the cf-turnstile-response field or widget callback.
+    console.log("result: " + JSON.stringify(solution));
 }
 
 solveTurnstileProxyless();
@@ -64,47 +46,29 @@ solveTurnstileProxyless();
 // Solves Cloudflare Turnstile through your own proxy.
 // Use when the target site is geo-restricted or you need a consistent session.
 async function solveTurnstileWithProxy() {
-    try {
-        // Step 1: Create a task with proxy parameters.
-        // Your proxy IP will be used to access the target site and solve the captcha.
-        const response = await axios.post("https://api.captcha-solver.com/createTask", {
-            clientKey: apiKey,
-            task: {
-                type: "TurnstileTask",
-                websiteURL: "https://example.com/login",                   // Full URL of the page with Turnstile
-                websiteKey: "0x4AAAAAAAVrOwQWPlm3Bnr5",                    // data-sitekey attribute value
-                // Proxy parameters:
-                proxyType: "http",       // http, socks4, or socks5
-                proxyAddress: "1.2.3.4", // Proxy IP address
-                proxyPort: 8080,         // Proxy port
-                proxyLogin: "user",      // Login for proxy authorization (optional)
-                proxyPassword: "password", // Password for proxy authorization (optional)
-                // Optional fields:
-                // action: "login",                                         // Value of data-action attribute
-                // data: "custom-cdata-value",                              // Value of data-cdata attribute
-                // pageData: "chl-page-data-value",                         // Value of chlPageData parameter
-                userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." // User-Agent your browser or bot uses
-            }
-        });
-        const taskId = response.data.taskId;
+    const solution = await solveCaptcha({
+        type: "TurnstileTask",
+        websiteURL: "https://example.com/login",                   // Full URL of the page with Turnstile
+        websiteKey: "0x4AAAAAAAVrOwQWPlm3Bnr5",                    // data-sitekey attribute value
+        // Proxy parameters:
+        proxyType: "http",         // http, socks4, or socks5
+        proxyAddress: "1.2.3.4",   // Proxy IP address
+        proxyPort: 8080,           // Proxy port
+        proxyLogin: "user",        // Login for proxy authorization (optional)
+        proxyPassword: "password", // Password for proxy authorization (optional)
+        // Optional fields:
+        // action: "login",                                         // Value of data-action attribute
+        // data: "custom-cdata-value",                              // Value of data-cdata attribute
+        // pageData: "chl-page-data-value",                         // Value of chlPageData parameter
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." // User-Agent your browser or bot uses
+    });
 
-        // Step 2: Poll for the result until the task is ready.
-        while (true) {
-            const result = await axios.post("https://api.captcha-solver.com/getTaskResult", {
-                clientKey: apiKey,
-                taskId: taskId
-            });
-            if (result.data.status === "ready") {
-                // Solution contains the same token.
-                console.log("result: " + JSON.stringify(result.data.solution));
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds before polling again.
-        }
-    } catch (error) {
-        console.error(error.message);
+    if (!solution) {
         process.exit(1);
     }
+
+    // Solution contains the same token.
+    console.log("result: " + JSON.stringify(solution));
 }
 
 solveTurnstileWithProxy();

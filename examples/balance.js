@@ -6,26 +6,20 @@
  *     Returns the current available balance of your account.
  */
 
-const axios = require('axios');
-require('dotenv').config();
+const client = require('../utils/client');
+const { validateConfig } = require('../utils/config');
 
-const apiKey = process.env.CAPTCHA_API_KEY || "YOUR_API_KEY";
+// Fail early with a clear message if the API key is missing.
+validateConfig();
 
-async function getBalance() {
-    try {
-        const response = await axios.post("https://api.captcha-solver.com/getBalance", {
-            clientKey: apiKey
-        });
-        const data = response.data;
-        if (data.errorId !== 0) {
-            console.error(data.errorDescription || "Unknown error");
-            process.exit(1);
-        }
-        console.log("Balance: " + data.balance);
-    } catch (error) {
-        console.error(error.message);
+async function showBalance() {
+    const balance = await client.getBalance();
+
+    if (balance === null) {
         process.exit(1);
     }
+
+    console.log("Balance: " + balance);
 }
 
-getBalance();
+showBalance();

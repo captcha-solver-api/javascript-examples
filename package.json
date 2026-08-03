@@ -2,9 +2,33 @@
   "name": "captcha-solver-js-examples",
   "version": "1.0.0",
   "description": "Examples for interacting with the Captcha Solver API using Node.js",
-  "main": "index.js",
+  "keywords": [
+    "captcha",
+    "captcha-solver",
+    "captcha-api",
+    "recaptcha",
+    "recaptcha-v2",
+    "recaptcha-v3",
+    "recaptcha-enterprise",
+    "turnstile",
+    "cloudflare-turnstile",
+    "yandex-smartcaptcha",
+    "geetest",
+    "tencent-captcha",
+    "image-to-text",
+    "nodejs",
+    "examples"
+  ],
+  "homepage": "https://captcha-solver.com/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/captcha-solver-api/javascript-examples.git"
+  },
+  "bugs": {
+    "url": "https://github.com/captcha-solver-api/javascript-examples/issues"
+  },
   "scripts": {
-    "start": "node index.js"
+    "start": "node examples/recaptcha_v2.js"
   },
   "dependencies": {
     "axios": "^1.7.0",
@@ -14,5 +38,6 @@
     "node": ">=16.0.0"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "private": true
 }
