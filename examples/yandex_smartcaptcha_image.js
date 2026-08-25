@@ -4,8 +4,7 @@
  * Prerequisites:
  *     Set the CAPTCHA_API_KEY environment variable in a .env file.
  *     Provide the captcha image and instruction image as base64.
- *     Use imgType to specify smart_captcha (select objects) or pazl_smart_captcha (puzzle).
- *     For smart_captcha, imgInstructions is required.
+ *     Use imgType set to smart_captcha to select objects. imgInstructions is required.
  */
 
 const fs = require('fs');
@@ -15,8 +14,7 @@ const { validateConfig } = require('../utils/config');
 // Fail early with a clear message if the API key is missing.
 validateConfig();
 
-// --- Option 1: Selecting objects by instruction (smart_captcha) ---
-// The worker selects objects on the captcha image following the instruction image.
+// Selects objects on the captcha image following the instruction image.
 // imgInstructions is required. Without it, the worker may misunderstand the task.
 async function solveYandexSmartCaptchaObjects() {
     // Read and encode the captcha image to base64.
@@ -45,26 +43,3 @@ async function solveYandexSmartCaptchaObjects() {
 }
 
 solveYandexSmartCaptchaObjects();
-
-// --- Option 2: Puzzle captcha (pazl_smart_captcha) ---
-// The worker solves a puzzle by dragging a slider to the correct position.
-// Only body and imgType are required. No instruction image is needed.
-async function solveYandexSmartCaptchaPuzzle() {
-    // Read and encode the puzzle captcha image to base64.
-    const body = fs.readFileSync("./puzzle.png", { encoding: "base64" });
-
-    const solution = await solveCaptcha({
-        type: "CoordinatesTask",
-        body: body,                    // Base64-encoded puzzle image (required)
-        imgType: "pazl_smart_captcha"  // pazl_smart_captcha for puzzle solving
-    });
-
-    if (!solution) {
-        process.exit(1);
-    }
-
-    // Solution contains coordinates with the slider position.
-    console.log("result: " + JSON.stringify(solution));
-}
-
-solveYandexSmartCaptchaPuzzle();
