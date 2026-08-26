@@ -51,7 +51,6 @@ async function solveGeeTestV3Proxyless() {
         challenge: challenge,                                // Session-specific value, must be fresh
         // Optional fields:
         // geetestApiServerSubdomain: "api-na.geetest.com",  // Custom API subdomain
-        // initParameters: {},                               // Extra params from initGeetest call
         // userAgent: "Mozilla/5.0 ..."                      // Browser User-Agent
     }, pollingOptions);
 

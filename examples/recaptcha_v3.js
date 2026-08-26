@@ -24,7 +24,7 @@ async function solveRecaptchaV3() {
         type: "RecaptchaV3TaskProxyless",
         websiteURL: "https://example.com/login",                   // Full URL of the page with captcha
         websiteKey: "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            // Site key of the reCAPTCHA v3 widget
-        minScore: 0.7,                                             // Minimum acceptable token score (0.1 to 0.9)
+        minScore: 0.7,                                             // Required score: must be 0.3, 0.7, or 0.9
         pageAction: "verify",                                      // Action value from grecaptcha.execute() call
         // Optional fields:
         // isEnterprise: false,                                     // Set true for reCAPTCHA v3 Enterprise

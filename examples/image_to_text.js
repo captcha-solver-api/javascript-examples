@@ -25,7 +25,7 @@ async function solveImageToTextBasic() {
     const solution = await solveCaptcha({
         type: "ImageToTextTask",
         body: body,   // Base64-encoded image (required)
-        numeric: 1,   // 1 = digits only
+        numeric: 1,   // 1 = only numbers
         minLength: 4, // Minimum expected answer length
         maxLength: 6  // Maximum expected answer length
     });
@@ -53,7 +53,7 @@ async function solveImageToTextAdvanced() {
         // Optional fields (pass only if needed by the captcha type):
         phrase: false,                                       // true if answer has multiple words
         case: true,                                          // true if answer is case-sensitive
-        numeric: 0,                                          // 0 = not specified, 1 = digits, 2 = letters, 3 = any with digits, 4 = any with letters
+        numeric: 0,                                          // 0 = no preference, 1 = only numbers, 2 = only letters, 3 = only numbers OR only letters, 4 = must contain both numbers AND letters
         math: true,                                          // true if image is a math expression to solve
         minLength: 1,                                        // Minimum answer length
         maxLength: 10,                                       // Maximum answer length

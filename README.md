@@ -186,14 +186,13 @@ const solution = await solveCaptcha({
 
 ### Cloudflare Turnstile
 
-Uses `TurnstileTaskProxyless`. Pass `action`, `data` (cData), or `pageData` if the site uses them. Always pass `userAgent` for complex pages like Cloudflare Challenge. Use `TurnstileTask` for your own proxy. See the official docs for Cloudflare Turnstile parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#cloudflare-turnstile).
+Uses `TurnstileTaskProxyless`. Pass `action`, `data` (cData), or `pagedata` if the site uses them. Use `TurnstileTask` for your own proxy. See the official docs for Cloudflare Turnstile parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#cloudflare-turnstile).
 
 ```javascript
 const solution = await solveCaptcha({
     type: "TurnstileTaskProxyless",
     websiteURL: "https://example.com",
-    websiteKey: "SITE_KEY",
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..."
+    websiteKey: "SITE_KEY"
 });
 
 // solution: { token: "0.zxcv..." }

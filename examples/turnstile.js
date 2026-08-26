@@ -4,8 +4,7 @@
  * Prerequisites:
  *     Set the CAPTCHA_API_KEY environment variable in a .env file.
  *     Replace websiteURL and websiteKey with values from your target page.
- *     Pass action, data, and pageData if the target site uses them.
- *     Always pass userAgent for complex pages like Cloudflare Challenge.
+ *     Pass action, data, and pagedata if the target site uses them.
  */
 
 const { solveCaptcha } = require('../utils/client');
@@ -16,9 +15,8 @@ validateConfig();
 
 // --- Proxyless example ---
 // Solves Cloudflare Turnstile without a proxy.
-// The token is tied to the User-Agent, so pass the same one your browser or bot uses.
 async function solveTurnstileProxyless() {
-    // Pass action, data (cData), or pageData if the site uses them.
+    // Pass action, data (cData), or pagedata if the site uses them.
     // For Cloudflare Challenge pages, you need to intercept turnstile.render to get these values.
     const solution = await solveCaptcha({
         type: "TurnstileTaskProxyless",
@@ -27,8 +25,7 @@ async function solveTurnstileProxyless() {
         // Optional fields (pass only if the target site uses them):
         // action: "login",                                         // Value of data-action attribute
         // data: "custom-cdata-value",                              // Value of data-cdata attribute
-        // pageData: "chl-page-data-value",                         // Value of chlPageData parameter
-        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." // User-Agent your browser or bot uses
+        // pagedata: "chl-page-data-value"                          // Value of chlPageData parameter
     });
 
     if (!solution) {
@@ -59,8 +56,7 @@ async function solveTurnstileWithProxy() {
         // Optional fields:
         // action: "login",                                         // Value of data-action attribute
         // data: "custom-cdata-value",                              // Value of data-cdata attribute
-        // pageData: "chl-page-data-value",                         // Value of chlPageData parameter
-        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." // User-Agent your browser or bot uses
+        // pagedata: "chl-page-data-value"                          // Value of chlPageData parameter
     });
 
     if (!solution) {
