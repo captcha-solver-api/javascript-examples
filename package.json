@@ -1,43 +1,43 @@
 {
-  "name": "captcha-solver-js-examples",
-  "version": "1.0.0",
-  "description": "Examples for interacting with the Captcha Solver API using Node.js",
-  "keywords": [
-    "captcha",
-    "captcha-solver",
-    "captcha-api",
-    "recaptcha",
-    "recaptcha-v2",
-    "recaptcha-v3",
-    "recaptcha-enterprise",
-    "turnstile",
-    "cloudflare-turnstile",
-    "yandex-smartcaptcha",
-    "geetest",
-    "tencent-captcha",
-    "image-to-text",
-    "nodejs",
-    "examples"
-  ],
-  "homepage": "https://captcha-solver.com/",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/captcha-solver-api/javascript-examples.git"
-  },
-  "bugs": {
-    "url": "https://github.com/captcha-solver-api/javascript-examples/issues"
-  },
-  "scripts": {
-    "start": "node examples/recaptcha_v2.js"
-  },
-  "dependencies": {
-    "axios": "^1.7.0",
-    "dotenv": "^16.4.5"
-  },
-  "engines": {
-    "node": ">=16.0.0"
-  },
-  "author": "",
-  "license": "MIT",
-  "private": true
+    "name":  "captcha-solver-js-examples",
+    "version":  "1.0.0",
+    "description":  "Examples for the Captcha Solver API using the official JavaScript SDK",
+    "keywords":  [
+                     "captcha",
+                     "captcha-solver",
+                     "captcha-api",
+                     "recaptcha",
+                     "recaptcha-v2",
+                     "recaptcha-v3",
+                     "recaptcha-enterprise",
+                     "turnstile",
+                     "cloudflare-turnstile",
+                     "yandex-smartcaptcha",
+                     "geetest",
+                     "tencent-captcha",
+                     "image-to-text",
+                     "nodejs",
+                     "examples"
+                 ],
+    "homepage":  "https://captcha-solver.com/",
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/captcha-solver-api/javascript-examples.git"
+                   },
+    "bugs":  {
+                 "url":  "https://github.com/captcha-solver-api/javascript-examples/issues"
+             },
+    "scripts":  {
+                    "start":  "node examples/recaptcha_v2.js"
+                },
+    "dependencies":  {
+                         "dotenv":  "^16.4.5"
+                     },
+    "engines":  {
+                    "node":  "\u003e=18.0.0"
+                },
+    "author":  "",
+    "license":  "MIT",
+    "private":  true,
+    "type":  "module"
 }

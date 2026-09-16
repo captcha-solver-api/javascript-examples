@@ -2,24 +2,22 @@
  * Example: Get account balance.
  *
  * Prerequisites:
- *     Set the CAPTCHA_API_KEY environment variable in a .env file.
- *     Returns the current available balance of your account.
+ *   Set the CAPTCHA_API_KEY environment variable.
+ *   Returns the current available balance of your account.
  */
 
-const client = require('../utils/client');
-const { validateConfig } = require('../utils/config');
+import 'dotenv/config';
+import { CaptchaClient } from 'captcha-sdk';
 
-// Fail early with a clear message if the API key is missing.
-validateConfig();
+const apiKey = process.env.CAPTCHA_API_KEY || 'YOUR_API_KEY';
 
-async function showBalance() {
-    const balance = await client.getBalance();
+const captchaSolver = new CaptchaClient({ clientKey: apiKey });
 
-    if (balance === null) {
-        process.exit(1);
-    }
-
-    console.log("Balance: " + balance);
+// Get the current account balance.
+// Returns a float with the available amount in your account currency.
+try {
+  const balance = await captchaSolver.getBalance();
+  console.log('Balance:', balance);
+} catch (error) {
+  console.error(error);
 }
-
-showBalance();

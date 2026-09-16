@@ -2,66 +2,82 @@
  * Example: Solve a click-based image captcha using CoordinatesTask.
  *
  * Prerequisites:
- *     Set the CAPTCHA_API_KEY environment variable in a .env file.
- *     Provide the captcha image as base64 in the body parameter.
- *     Use comment to tell the worker what to click on the image.
- *     No proxy is required. The image is submitted directly to the service.
+ *   Set the CAPTCHA_API_KEY environment variable. That is all: the sample
+ *   captcha ships with the repository, in assets/.
+ *   Point the read below at your own file to solve a different image, and use
+ *   comment to tell the worker what to click on it.
+ *   No proxy is required. The image is submitted directly to the service.
  */
 
-const fs = require('fs');
-const { solveCaptcha } = require('../utils/client');
-const { validateConfig } = require('../utils/config');
+import 'dotenv/config';
+import fs from 'fs';
+import { CaptchaClient, Tasks } from 'captcha-sdk';
 
-// Fail early with a clear message if the API key is missing.
-validateConfig();
+const apiKey = process.env.CAPTCHA_API_KEY || 'YOUR_API_KEY';
+
+const captchaSolver = new CaptchaClient({ clientKey: apiKey });
 
 // Read and encode the captcha image to base64.
 // The body must be a pure base64 string without the data:image/...;base64, prefix.
-const body = fs.readFileSync("./captcha.png", { encoding: "base64" });
+// The path is resolved against this file rather than the working directory, so
+// the example runs from anywhere -- including from the repository root.
+const body = fs.readFileSync(new URL('../assets/coordinates-captcha.png', import.meta.url)).toString('base64');
 
 // --- Basic example ---
-// Solves a simple click-based captcha with a hint for the worker.
-// The worker will click on the specified points on the image.
-async function solveCoordinatesBasic() {
-    const solution = await solveCaptcha({
-        type: "CoordinatesTask",
-        body: body,                              // Base64-encoded captcha image (required)
-        comment: "click on the green apple"      // Text hint for the worker
-    });
-
-    if (!solution) {
-        process.exit(1);
-    }
-
-    // Solution contains {"coordinates": [{"x": 358, "y": 268}]}
-    // Click on each coordinate in order. Coordinates are pixel positions.
-    console.log("result: " + JSON.stringify(solution));
+// Solves a simple click-based captcha with a hint for the worker. The comment
+// repeats the instruction printed on the sample image, because nothing
+// guarantees the worker reads the text baked into the picture.
+try {
+  const task = new Tasks.CoordinatesTask({
+    body: body,                                          // Base64-encoded captcha image (required)
+    comment: 'click on all squares with street signs'     // Text hint for the worker
+  });
+  const result = await captchaSolver.solve(task);
+  // Solution contains { coordinates: [{ x: 358, y: 268 }] }
+  console.log('result:', result);
+} catch (error) {
+  console.error(error);
 }
-
-solveCoordinatesBasic();
 
 // --- Advanced example ---
-// Solves a captcha with instruction image and click count limits.
-async function solveCoordinatesAdvanced() {
-    // Read and encode an optional instruction image.
-    // This image helps the worker understand what to click.
-    const imgInstructions = fs.readFileSync("./instruction.png", { encoding: "base64" });
+// Solves a captcha (assets/traffic-lights.png) with instruction image
+// (assets/traffic-lights-instructions.png) and click count limits.
+// Uses its own body -- the basic example's sample image above isn't traffic lights.
+try {
+  const trafficBody = fs.readFileSync(new URL('../assets/traffic-lights.png', import.meta.url)).toString('base64');
+  const imgInstructions = fs.readFileSync(
+    new URL('../assets/traffic-lights-instructions.png', import.meta.url)
+  ).toString('base64');
 
-    const solution = await solveCaptcha({
-        type: "CoordinatesTask",
-        body: body,                              // Base64-encoded captcha image
-        comment: "click on all traffic lights",  // Text hint for the worker
-        imgInstructions: imgInstructions,        // Optional instruction image
-        minClicks: 1,                            // Minimum number of clicks (default 1)
-        maxClicks: 3                             // Maximum number of clicks allowed
-    });
-
-    if (!solution) {
-        process.exit(1);
-    }
-
-    // Solution contains coordinates for all requested clicks.
-    console.log("result: " + JSON.stringify(solution));
+  const task = new Tasks.CoordinatesTask({
+    body: trafficBody,                          // Base64-encoded captcha image
+    comment: 'click on all traffic lights',      // Text hint for the worker
+    imgInstructions: imgInstructions,            // Optional instruction image
+    minClicks: 1,                                // Minimum number of clicks (default 1)
+    maxClicks: 3                                 // Maximum number of clicks allowed
+  });
+  const result = await captchaSolver.solve(task);
+  console.log('result:', result);
+} catch (error) {
+  console.error(error);
 }
 
-solveCoordinatesAdvanced();
+// --- Yandex SmartCaptcha image mode ---
+// CoordinatesTask also solves Yandex SmartCaptcha in image mode via imgType.
+// assets/yandex-smartcaptcha-sample.jpg is a real SmartCaptcha screenshot
+// with its click-order hint already baked into the image itself (the row of icons
+// under "Нажмите в таком порядке"), which is why imgInstructions isn't passed here
+// -- pass one yourself if your target site shows the instruction as a separate image.
+try {
+  const yandexBody = fs.readFileSync(new URL('../assets/yandex-smartcaptcha-sample.jpg', import.meta.url)).toString('base64');
+  const task = new Tasks.CoordinatesTask({
+    body: yandexBody,
+    imgType: 'smart_captcha',                    // smart_captcha for object selection
+    comment: 'select objects in the order of the instruction'
+    // imgInstructions: ...,                      // Optional: pass a separate instruction image, base64-encoded
+  });
+  const result = await captchaSolver.solve(task);
+  console.log('result:', result);
+} catch (error) {
+  console.error(error);
+}
