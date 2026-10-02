@@ -76,6 +76,14 @@ Each example creates a task through `Tasks` and calls `CaptchaClient.solve()`. P
 
 API documentation: https://captcha-solver.com/en/docs/captcha-types
 
+## Useful Links
+
+- [Python SDK](https://github.com/captcha-solver-api/python-sdk)
+- [JavaScript SDK](https://github.com/captcha-solver-api/javascript-sdk)
+- [Python examples](https://github.com/captcha-solver-api/python-examples)
+- [Cloudflare Turnstile Puppeteer Demo](https://github.com/captcha-solver-api/cloudflare-turnstile-puppeteer-demo)
+- [Tencent CAPTCHA automation examples](https://github.com/captcha-solver-api/How-to-Automate-Tencent-CAPTCHA)
+
 ## License
 
 MIT. See [LICENSE.md](LICENSE.md).
