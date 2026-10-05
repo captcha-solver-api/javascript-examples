@@ -76,6 +76,18 @@ Each example creates a task through `Tasks` and calls `CaptchaClient.solve()`. P
 
 API documentation: https://captcha-solver.com/en/docs/captcha-types
 
+## Build Faster with AI
+
+Give [`llms.txt`](https://captcha-solver.com/llms.txt) to your AI assistant so it
+uses the current API parameters and solution format while adapting these
+JavaScript examples to your page.
+
+```text
+Read https://captcha-solver.com/llms.txt and adapt the matching JavaScript example
+from this repository to my target page: [describe the page and CAPTCHA].
+Show how to collect the required parameters and apply the returned solution.
+```
+
 ## Useful Links
 
 - [Python SDK](https://github.com/captcha-solver-api/python-sdk)
